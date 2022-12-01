@@ -255,6 +255,11 @@
   (if (zero? m) '()
       (append lst (repeat (sub1 m) lst))))
 
+;; mmap : (a -> b) -> (listof (listof a)) -> (listof (listof b))
+;; Map a list of lists
+(define (mmap f lst)
+  (map (∂ map f) lst))
+
 ;; chunks-of : (listof any) -> nonzero? -> (listof (listof any))
 ;; Partitions a list into lists of the given size in order,
 ;; with the final list possibly being smaller
