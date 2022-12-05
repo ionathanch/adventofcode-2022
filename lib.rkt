@@ -306,8 +306,8 @@
   (vector-ref vec (sub1 (vector-length vec))))
 
 ;; vector-ref* : (vectorof any) -> number -> any -> any
-;; Same as list-ref, except a default value is provided
-;; if the index is beyond the length of the list.
+;; Same as vector-ref, except a default value is provided
+;; if the index is beyond the length of the vector.
 (define (vector-ref* vec pos failure-result)
   (if (>= pos (vector-length vec))
       failure-result
