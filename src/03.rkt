@@ -26,7 +26,7 @@
     (priority (unique rucksack))))
 
 (define part2
-  (for/sum ([rucksacks (chunks-of input 3)])
+  (for/sum ([rucksacks (in-slice 3 input)])
     (priority (badge rucksacks))))
 
 (show-solution part1 part2)

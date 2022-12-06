@@ -260,15 +260,6 @@
 (define (mmap f lst)
   (map (∂ map f) lst))
 
-;; chunks-of : (listof any) -> nonzero? -> (listof (listof any))
-;; Partitions a list into lists of the given size in order,
-;; with the final list possibly being smaller
-;; e.g. '(1 2 3 4 5) 2 => '((1 2) (3 4) (5))
-(define (chunks-of lst size)
-  (if (< (length lst) size) lst
-      (cons (take lst size)
-            (chunks-of (drop lst size) size))))
-
 ;; transpose : (listof (listof any)) -> (listof (listof any))
 ;; Turns a list of lists into a list of lists of
 ;; the first elements of the lists, ..., the nth elements
