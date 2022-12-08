@@ -62,9 +62,8 @@
        (- r r*))))
 
 (define part2
-  (maximum
-   (for*/list ([r (in-range 1 (sub1 height))]
-               [c (in-range 1 (sub1 width))])
-     (score r c))))
+  (for*/max ([r (in-range 1 (sub1 height))]
+             [c (in-range 1 (sub1 width))])
+    (score r c)))
 
 (show-solution (part1) part2)

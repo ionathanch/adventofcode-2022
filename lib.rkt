@@ -7,10 +7,39 @@
            enqueue!)
   (only-in racket/set
            list->set
-           set->list))
+           set->list)
+  (for-syntax syntax/for-body)
+  syntax/parse/define)
 
 (provide (all-from-out threading)
          (all-defined-out))
+
+
+;; Macros ;;
+
+(define-syntax-parse-rule (for/max clauses body ... tail-expr)
+  #:with original this-syntax
+  #:with ((pre-body ...) (post-body ...)) (split-for-body this-syntax #'(body ... tail-expr))
+  (for/fold/derived original
+    ([current-max -inf.0])
+    clauses
+    pre-body ...
+    (define maybe-new-max (begin post-body ...))
+    (if (> maybe-new-max current-max)
+        maybe-new-max
+        current-max)))
+
+(define-syntax-parse-rule (for*/max clauses body ... tail-expr)
+  #:with original this-syntax
+  #:with ((pre-body ...) (post-body ...)) (split-for-body this-syntax #'(body ... tail-expr))
+  (for*/fold/derived original
+    ([current-max -inf.0])
+    clauses
+    pre-body ...
+    (define maybe-new-max (begin post-body ...))
+    (if (> maybe-new-max current-max)
+        maybe-new-max
+        current-max)))
 
 
 ;; Function helpers ;;
