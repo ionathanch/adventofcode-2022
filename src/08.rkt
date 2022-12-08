@@ -2,25 +2,15 @@
 
 (require "../lib.rkt")
 
-(define test
-  '("30373"
-    "25512"
-    "65332"
-    "33549"
-    "35390"))
-
-(define input
-  (~>> (problem-input 8) #;test
-       (map string->list)
-       (mmap char->number)
-       (map list->vector)
-       list->vector))
+(define input (list->vector (problem-input 8)))
 
 (define (get-tree r c)
-  (vector-ref (vector-ref input r) c))
+  (string-ref (vector-ref input r) c))
 
-(define width (vector-length (vector-first input)))
+(define width (string-length (vector-first input)))
 (define height (vector-length input))
+(define < char<?)
+(define >= char>=?)
 
 (define (part1)
   (define talls (mutable-set))
