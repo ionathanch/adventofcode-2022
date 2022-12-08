@@ -333,3 +333,10 @@
   (for/first ([i (vector-length vec)]
               #:when (p (vector-ref vec i)))
     i))
+
+
+;; Sequence helpers ;;
+
+;; in-reverse-range : number? -> sequence?
+(define (in-reverse-range n)
+  (in-range (sub1 n) -1 -1))
