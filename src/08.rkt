@@ -12,72 +12,49 @@
 (define input
   (~>> (problem-input 8) #;test
        (map string->list)
-       (mmap char->number)))
+       (mmap char->number)
+       (map list->vector)
+       list->vector))
 
 (define (get-tree r c)
-  (list-ref (list-ref input r) c))
+  (vector-ref (vector-ref input r) c))
 
-(define width (length (first input)))
-(define height (length input))
+(define width (vector-length (vector-first input)))
+(define height (vector-length input))
 
 (define (part1)
-  (define s1
-    (for/fold ([talls (set)])
-              ([r (range height)])
-      (for/fold ([talls talls]
-                 [tallest (get-tree r 0)]
-                 #:result talls)
-                ([c (range width)])
-        (define t (get-tree r c))
-        (if (< tallest t)
-            (values (set-add talls (cons r c)) t)
-            (values talls tallest)))))
-  (define s2
-    (for/fold ([talls s1])
-              ([r (range height)])
-      (for/fold ([talls talls]
-                 [tallest (get-tree r (sub1 width))]
-                 #:result talls)
-                ([c (reverse (range width))])
-        (define t (get-tree r c))
-        (if (< tallest t)
-            (values (set-add talls (cons r c)) t)
-            (values talls tallest)))))
-  (define s3
-    (for/fold ([talls s2])
+  (define talls (mutable-set))
+  (for ([r (range height)])
+    (set-add! talls (cons r 0))
+    (set-add! talls (cons r (sub1 width)))
+    (for/fold ([tallest (get-tree r 0)])
               ([c (range width)])
-      (for/fold ([talls talls]
-                 [tallest (get-tree 0 c)]
-                 #:result talls)
-                ([r (range height)])
-        (define t (get-tree r c))
-        (if (< tallest t)
-            (values (set-add talls (cons r c)) t)
-            (values talls tallest)))))
-  (define s4
-    (for/fold ([talls s3])
-              ([c (range width)])
-      (for/fold ([talls talls]
-                 [tallest (get-tree (sub1 height) c)]
-                 #:result talls)
-                ([r (reverse (range height))])
-        (define t (get-tree r c))
-        (if (< tallest t)
-            (values (set-add talls (cons r c)) t)
-            (values talls tallest)))))
-  (define s5
-    (for/fold ([talls s4])
+      (define t (get-tree r c))
+      (if (< tallest t)
+          (begin (set-add! talls (cons r c)) t)
+          tallest))
+    (for/fold ([tallest (get-tree r (sub1 width))])
+              ([c (reverse (range width))])
+      (define t (get-tree r c))
+      (if (< tallest t)
+          (begin (set-add! talls (cons r c)) t)
+          tallest)))
+  (for ([c (range width)])
+    (set-add! talls (cons 0 c))
+    (set-add! talls (cons (sub1 height) c))
+    (for/fold ([tallest (get-tree 0 c)])
               ([r (range height)])
-      (~> talls
-          (set-add (cons r 0))
-          (set-add (cons r (sub1 width))))))
-  (define s6
-    (for/fold ([talls s5])
-              ([c (range width)])
-      (~> talls
-          (set-add (cons 0 c))
-          (set-add (cons (sub1 height) c)))))
-  (set-count s6))
+      (define t (get-tree r c))
+      (if (< tallest t)
+          (begin (set-add! talls (cons r c)) t)
+          tallest))
+    (for/fold ([tallest (get-tree (sub1 height) c)])
+              ([r (reverse (range height))])
+      (define t (get-tree r c))
+      (if (< tallest t)
+          (begin (set-add! talls (cons r c)) t)
+          tallest)))
+  (set-count talls))
 
 (define (score r c)
   (define t (get-tree r c))
