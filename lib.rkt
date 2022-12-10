@@ -91,6 +91,14 @@
 (define (show-solution part1 part2)
   (printf "Part 1: ~a\nPart 2: ~a\n" part1 part2))
 
+;; show-solution* : (-> a) -> (-> b) -> void
+;; Like show-solution, but parts 1 and 2 are thunks.
+(define (show-solution* part1 part2)
+  (display "Part 1: ")
+  (displayln (part1))
+  (display "Part 2: ")
+  (displayln (part2)))
+
 
 ;; String helpers ;;
 
