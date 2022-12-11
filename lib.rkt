@@ -212,6 +212,10 @@
 ;; % : number -> number -> number
 (define % modulo)
 
+;; divisible? : number -> number -> number
+(define (divisible? n m)
+  (= (% n m) 0))
+
 ;; number->digits-reverse : number -> (listof number)
 ;; Return the digits of the given number in reverse order (i.e. RTL)
 (define (number->digits-reverse n)
