@@ -1,31 +1,54 @@
 #lang racket
 
-(require "../lib.rkt")
+(require "../lib.rkt"
+         data/queue)
 
-(let ([bindings
-       (for/list ([yell (problem-input 21)])
-         (match yell
-           [(pregexp "(\\w+): (\\d+)" `(,_ ,monkey ,n))
-            (format "(define (~a) ~a)" monkey n)]
-           [(pregexp "(\\w+): (\\w+) (\\+|-|\\*|/) (\\w+)" `(,_ ,monkey ,monkey1 ,op ,monkey2))
-            (format "(define (~a) (~a (~a) (~a)))" monkey op monkey1 monkey2)]))])
-  (display-lines-to-file
-   `(,"#lang racket" ,@bindings "(root)")
-   "21-part1.rkt" #:exists 'replace))
+(define input
+  (for/hash ([yell (problem-input 21)])
+    (match yell
+      [(pregexp "(\\w+): (\\d+)" `(,_ ,monkey ,n))
+       (values (string->symbol monkey) (string->number n))]
+      [(pregexp "(\\w+): (\\w+) (\\+|-|\\*|/) (\\w+)" `(,_ ,monkey ,monkey1 ,op ,monkey2))
+       (values (string->symbol monkey) (map string->symbol `(,op ,monkey1 ,monkey2)))])))
 
-(let ([bindings
-       (for/list ([yell (problem-input 21)])
-         (match yell
-           [(pregexp "humn: \\d+" `(,_))
-            "(define-symbolic humn integer?)"]
-           [(pregexp "root: (\\w+) (\\+|-|\\*|/) (\\w+)" `(,_ ,monkey1 ,op ,monkey2))
-            (format "(define (root) (assert (eq? (~a) (~a))))" monkey1 monkey2)]
-           [(pregexp "(\\w+): (\\w+) (\\+|-|\\*|/) humn" `(,_ ,monkey ,monkey1 ,op))
-            (format "(define (~a) (~a (~a) humn))" monkey op monkey1)]
-           [(pregexp "(\\w+): (\\d+)" `(,_ ,monkey ,n))
-            (format "(define (~a) ~a)" monkey n)]
-           [(pregexp "(\\w+): (\\w+) (\\+|-|\\*|/) (\\w+)" `(,_ ,monkey ,monkey1 ,op ,monkey2))
-            (format "(define (~a) (~a (~a) (~a)))" monkey op monkey1 monkey2)]))])
-  (display-lines-to-file
-   `(,"#lang rosette/safe" ,@bindings "(evaluate humn (solve (root)))")
-   "21-part2.rkt" #:exists 'replace))
+(define monkeys
+  (let ([Q (make-queue)])
+    (enqueue! Q 'root)
+    (let loop ([monkeys '()])
+      (if (queue-empty? Q)
+          monkeys
+          (let ([monkey (dequeue! Q)])
+            (match (hash-ref input monkey)
+              [(? number?) (loop (cons monkey monkeys))]
+              [`(,_ ,monkey1 ,monkey2)
+               (enqueue! Q monkey1)
+               (enqueue! Q monkey2)
+               (loop (cons monkey monkeys))]))))))
+
+(define part1-defines
+  (for/list ([monkey monkeys])
+    (match (hash-ref input monkey)
+      [(? number? n) `(define ,monkey ,n)]
+      [`(,op ,monkey1 ,monkey2)
+       `(define ,monkey (,op ,monkey1 ,monkey2))])))
+
+(define part2-defines
+  (for/list ([monkey monkeys])
+    (match (hash-ref input monkey)
+      [_ #:when (symbol=? monkey 'humn)
+         '(define-symbolic humn integer?)]
+      [(? number? n) `(define ,monkey ,n)]
+      [`(,op ,monkey1 ,monkey2)
+       `(define ,monkey (,op ,monkey1 ,monkey2))])))
+
+(display-lines-to-file
+ `("#lang racket" ,@part1-defines root)
+ "21-part1.rkt" #:exists 'replace)
+
+(display-lines-to-file
+ `("#lang rosette/safe"
+   ,@part2-defines
+   (evaluate humn
+             (solve (assert (eq? ,(second (hash-ref input 'root))
+                                 ,(third (hash-ref input 'root)))))))
+ "21-part2.rkt" #:exists 'replace)
