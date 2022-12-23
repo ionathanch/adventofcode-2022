@@ -67,14 +67,17 @@
     (hash-update ps (apply (propose elves r) elf) #{cons elf %} '())))
 
 (define (round elves r)
-  (for/fold ([elves* (set)])
+  (for/fold ([elves* (set)]
+             [moved? #f])
             ([(p es) (proposals elves r)])
     (match es
-      [`(,e1 ,e2) (set-add (set-add elves* e1) e2)]
-      [`(,e) (set-add elves* p)])))
+      [`(,e1 ,e2) (values (set-add (set-add elves* e1) e2) moved?)]
+      [`(,e) #:when (not (equal? p e)) (values (set-add elves* p) #t)]
+      [`(,e) (values (set-add elves* p) moved?)])))
 
 (define part1
   (for/fold ([elves elves]
+             [_ #f]
              #:result (grounds elves))
             ([r (in-range 10)])
     (round elves r)))
@@ -82,7 +85,7 @@
 (define part2
   (let loop ([elves elves]
              [r 1])
-    (define elves* (round elves r))
-    (if (set=? elves elves*) (add1 r) (loop elves* (add1 r)))))
+    (define-values (elves* moved?) (round elves r))
+    (if moved? (loop elves* (add1 r)) (add1 r))))
 
 (show-solution part1 part2)
