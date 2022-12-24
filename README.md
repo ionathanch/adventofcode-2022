@@ -8,4 +8,4 @@ Approximate execution times of the hardest problems, compiled with `raco exe`.
 | 16  | 20.6     |
 | 19  | 75.7     |
 | 23  | 14.0     |
-| 24  | 747      |
+| 24  | 4.12     |

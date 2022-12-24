@@ -3,86 +3,70 @@
 (require "../lib.rkt"
          data/queue)
 
-(define test
-  (list "#.######"
-        "#>>.<^<#"
-        "#.<..<<#"
-        "#>v.><>#"
-        "#<^v^^>#"
-        "######.#"))
-
 (define input (problem-input 24))
 
-(define blizzards
-  (for/fold ([blizzards (make-immutable-hash)])
+(define-values (xblizzards yblizzards)
+  (for/fold ([xblizzards (make-immutable-hash)]
+             [yblizzards (make-immutable-hash)])
             ([row input]
              [y (in-naturals)])
-    (for/fold ([blizzards blizzards])
+    (for/fold ([xblizzards xblizzards]
+               [yblizzards yblizzards])
               ([col (string->list row)]
                [x (in-naturals)])
-      (if ((or/c #\> #\< #\^ #\v) col)
-          (hash-update blizzards `(,x ,y) #{cons col %} '())
-          blizzards))))
+      (define x* (sub1 x))
+      (define y* (sub1 y))
+      (match col
+        [(or #\< #\>)
+         (values xblizzards (hash-update yblizzards y* #{cons (list x* col) %} '()))]
+        [(or #\^ #\v)
+         (values (hash-update xblizzards x* #{cons (list y* col) %} '()) yblizzards)]
+        [else (values xblizzards yblizzards)]))))
 
 (define xmax (- (string-length (first input)) 2))
 (define ymax (- (length input) 2))
-(define start '(1 0))
-(define end `(,xmax ,(add1 ymax)))
+(define start '(0 -1))
+(define end `(,(sub1 xmax) ,ymax))
 
-(define (show blizzards)
-  (for ([y (in-inclusive-range 1 ymax)])
-    (for ([x (in-inclusive-range 1 xmax)])
-      (display (first (hash-ref blizzards (list x y) '(#\.)))))
-    (newline)))
+(define (blizzard? x y t)
+  (or (for/or ([yb (hash-ref xblizzards x '())])
+        (match yb
+          [`(,y* #\^) (= y (% (- y* t) ymax))]
+          [`(,y* #\v) (= y (% (+ y* t) ymax))]))
+      (for/or ([xb (hash-ref yblizzards y '())])
+        (match xb
+          [`(,x* #\<) (= x (% (- x* t) xmax))]
+          [`(,x* #\>) (= x (% (+ x* t) xmax))]))))
 
-(define (step blizzards)
-  (for*/fold ([blizzards* (make-immutable-hash)])
-             ([(xy bs) blizzards]
-              [b bs])
-    (match (list xy b)
-      [`((,x ,y) #\>)
-       (define x* (if (= x xmax) 1 (add1 x)))
-       (hash-update blizzards* `(,x* ,y) #{cons #\> %} '())]
-      [`((,x ,y) #\<)
-       (define x* (if (= x 1) xmax (sub1 x)))
-       (hash-update blizzards* `(,x* ,y) #{cons #\< %} '())]
-      [`((,x ,y) #\v)
-       (define y* (if (= y ymax) 1 (add1 y)))
-       (hash-update blizzards* `(,x ,y*) #{cons #\v %} '())]
-      [`((,x ,y) #\^)
-       (define y* (if (= y 1) ymax (sub1 y)))
-       (hash-update blizzards* `(,x ,y*) #{cons #\^ %} '())])))
-
-(define (clears blizzards x y)
-  (filter #{match-let ([(and xy `(,x ,y)) %])
-             (or (and (<= 1 x xmax)
-                      (<= 1 y ymax)
-                      (empty? (hash-ref blizzards xy '())))
+(define (clears x y t)
+  (filter #{match-let ([(and `(,@xy ,t) `(,x ,y ,t)) %])
+             (or (and (<= 0 x) (< x xmax)
+                      (<= 0 y) (< y ymax)
+                      (not (blizzard? x y t)))
                  (equal? xy start)
                  (equal? xy end))}
-          `((,x ,y)
-            (,(add1 x) ,y)
-            (,(sub1 x) ,y)
-            (,x ,(add1 y))
-            (,x ,(sub1 y)))))
+          `((,x ,y ,t)
+            (,(add1 x) ,y ,t)
+            (,(sub1 x) ,y ,t)
+            (,x ,(add1 y) ,t)
+            (,x ,(sub1 y) ,t))))
 
-(define (wayfind blizzards start end)
+(define (wayfind start end t)
   (define Q (make-queue))
-  (enqueue! Q `(,start ,0 ,blizzards))
+  (enqueue! Q `(,@start ,t))
   (let loop ([seen (set)])
     (match (dequeue! Q)
-      [`(,xy ,t ,blizzards) #:when (equal? xy end) (values blizzards t)]
-      [`((,x ,y) ,t ,_) #:when (set-member? seen `(,x ,y ,t)) (loop seen)]
-      [`((,x ,y) ,t ,blizzards)
-       (define blizzards* (step blizzards))
-       (for ([clear (clears blizzards* x y)])
-         (enqueue! Q `(,clear ,(add1 t) ,blizzards*)))
-       (loop (set-add seen `(,x ,y ,t)))])))
+      [`(,@xy ,t) #:when (equal? xy end) t]
+      [xyt #:when (set-member? seen xyt) (loop seen)]
+      [(and xyt `(,x ,y ,t))
+       (for ([clear (clears x y (add1 t))])
+         (enqueue! Q clear))
+       (loop (set-add seen xyt))])))
 
 (define-values (part1 part2)
-  (let*-values ([(blizzards t1) (wayfind blizzards start end)]
-                [(blizzards t2) (wayfind blizzards end start)]
-                [(blizzards t3) (wayfind blizzards start end)])
-    (values t1 (+ t1 t2 t3))))
+  (let* ([t1 (wayfind start end 0)]
+         [t2 (wayfind end start t1)]
+         [t3 (wayfind start end t2)])
+    (values t1 t3)))
 
 (show-solution part1 part2)
